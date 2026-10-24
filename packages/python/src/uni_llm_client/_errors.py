@@ -30,3 +30,10 @@ class IncompleteResponseError(UniLLMError):
 
 class RefusalError(UniLLMError):
     """The model declined to answer."""
+
+
+class TransportError(UniLLMError):
+    """The vendor could not be reached, or the connection failed or timed out.
+
+    The HTTP library's exception is the ``__cause__`` (RETRY-5).
+    """

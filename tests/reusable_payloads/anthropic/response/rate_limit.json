@@ -1,5 +1,8 @@
 {
   "status": 429,
+  "headers": {
+    "retry-after": "0"
+  },
   "body": {
     "type": "error",
     "error": {

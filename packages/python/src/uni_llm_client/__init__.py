@@ -14,6 +14,7 @@ from uni_llm_client._errors import (
     ProviderError,
     RateLimitError,
     RefusalError,
+    TransportError,
     UniLLMError,
 )
 from uni_llm_client._events import (
@@ -75,6 +76,7 @@ __all__ = [
     "ToolUseDelta",
     "ToolUseEnd",
     "ToolUseStart",
+    "TransportError",
     "UniLLMError",
     "Usage",
     "VendorContent",

@@ -12,6 +12,7 @@ and this project adheres to
 
 - Initial Python project structure.
 - Anthropic and OpenRouter support
+- Retries of failed model calls (`max_retries`), and `TransportError` for connection failures and timeouts
 
 ### Changed
 

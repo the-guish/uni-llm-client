@@ -102,6 +102,14 @@
           {
             "request": "anthropic/request/opus_5_question",
             "response": "anthropic/response/rate_limit"
+          },
+          {
+            "request": "anthropic/request/opus_5_question",
+            "response": "anthropic/response/rate_limit"
+          },
+          {
+            "request": "anthropic/request/opus_5_question",
+            "response": "anthropic/response/rate_limit"
           }
         ],
         "reply": "uni-llm-client/response/rate_limit"
@@ -169,6 +177,14 @@
       {
         "stream": "uni-llm-client/request/stream_paris_question",
         "vendor": [
+          {
+            "request": "anthropic/request/stream_paris_question",
+            "response": "anthropic/response/rate_limit"
+          },
+          {
+            "request": "anthropic/request/stream_paris_question",
+            "response": "anthropic/response/rate_limit"
+          },
           {
             "request": "anthropic/request/stream_paris_question",
             "response": "anthropic/response/rate_limit"

@@ -44,6 +44,7 @@ from uni_llm_client import (
     ToolUseDelta,
     ToolUseEnd,
     ToolUseStart,
+    TransportError,
     VendorContent,
 )
 from uni_llm_client._client import DEFAULT_TIMEOUT
@@ -76,6 +77,7 @@ ERROR_TYPES: list[tuple[type[Exception], str]] = [
     (RateLimitError, "rate_limit"),
     (RefusalError, "refusal"),
     (IncompleteResponseError, "incomplete_response"),
+    (TransportError, "transport"),
     (ProviderError, "provider"),
 ]
 
@@ -149,6 +151,14 @@ def event_json(event: StreamEvent) -> dict[str, Any]:
     return {"type": name, **dataclasses.asdict(event)}
 
 
+def client_kwargs(args: dict[str, Any]) -> dict[str, Any]:
+    """The arguments of the client: `api_keys`, and `max_retries` when given."""
+    kwargs: dict[str, Any] = {"api_keys": args.get("api_keys")}
+    if "max_retries" in args:
+        kwargs["max_retries"] = args["max_retries"]
+    return kwargs
+
+
 def ask_kwargs(args: dict[str, Any]) -> dict[str, Any]:
     return {
         "model": args["model"],
@@ -186,7 +196,12 @@ def call_sync(vendor_url: httpx2.URL, call: str, args: dict[str, Any]) -> Any:
         timeout=DEFAULT_TIMEOUT,
         trust_env=False,
     )
-    with Client(api_keys=args.get("api_keys"), http_client=http_client) as client:
+    try:
+        client = Client(http_client=http_client, **client_kwargs(args))
+    except Exception as error:
+        http_client.close()
+        return error_reply(error)
+    with client:
         try:
             if call == "ask":
                 return {"answer": client.ask(**ask_kwargs(args))}
@@ -212,9 +227,12 @@ def call_async(vendor_url: httpx2.URL, call: str, args: dict[str, Any]) -> Any:
             timeout=DEFAULT_TIMEOUT,
             trust_env=False,
         )
-        async with AsyncClient(
-            api_keys=args.get("api_keys"), http_client=http_client
-        ) as client:
+        try:
+            client = AsyncClient(http_client=http_client, **client_kwargs(args))
+        except Exception as error:
+            await http_client.aclose()
+            return error_reply(error)
+        async with client:
             try:
                 if call == "ask":
                     return {"answer": await client.ask(**ask_kwargs(args))}

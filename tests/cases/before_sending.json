@@ -58,5 +58,15 @@
         "reply": "uni-llm-client/response/stream_invalid_argument"
       }
     ]
+  },
+  {
+    "name": "negative-max-retries",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/negative_max_retries",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
   }
 ]

@@ -24,6 +24,7 @@ from uni_llm_client._messages import Message, Response, Tool
 from uni_llm_client._sse import ServerSentEvent
 
 # Upper bound on requests per question, including follow-ups for paused turns.
+# The retries of a failed request do not count (RETRY-8).
 MAX_REQUESTS = 6
 
 

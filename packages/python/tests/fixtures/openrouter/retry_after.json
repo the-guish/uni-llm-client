@@ -1,0 +1,7 @@
+[
+  {
+    "status": 429,
+    "headers": {"retry-after": "7"},
+    "body": {"error": {"message": "Rate limit exceeded", "code": 429}}
+  }
+]

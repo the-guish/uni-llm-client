@@ -23,6 +23,10 @@ A third, `stream`, should receive the same and yield the response as it
 arrives ([streaming.md](streaming.md)). `ask` is `complete` with one user
 message.
 
+The client should send a call again when it failed in a way that may pass on
+another attempt, such as a rate limit or a lost connection, twice by default
+([retries.md](retries.md)).
+
 The library internals should have a single abstract base class (ABC) that can be
 implemented for each provider.
 

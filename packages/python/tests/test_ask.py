@@ -63,13 +63,14 @@ def test_resumes_a_paused_turn(ask: Ask, vendor: FakeVendor, model: str) -> None
 
 
 @pytest.mark.parametrize(
-    ("scenario", "error"),
+    ("scenario", "error", "requests"),
     [
-        ("truncated", IncompleteResponseError),
-        ("refusal", RefusalError),
-        ("auth_error", AuthenticationError),
-        ("rate_limit", RateLimitError),
-        ("server_error", ProviderError),
+        ("truncated", IncompleteResponseError, 1),
+        ("refusal", RefusalError, 1),
+        ("auth_error", AuthenticationError, 1),
+        # The first attempt and the two default retries (RETRY-1, RETRY-6).
+        ("rate_limit", RateLimitError, 3),
+        ("server_error", ProviderError, 3),
     ],
 )
 def test_raises_on_unsuccessful_responses(
@@ -78,12 +79,14 @@ def test_raises_on_unsuccessful_responses(
     model: str,
     scenario: str,
     error: type[UniLLMError],
+    requests: int,
 ) -> None:
-    vendor.serve(model, scenario)
+    vendor.serve(model, *[scenario] * requests)
 
     with pytest.raises(error) as excinfo:
         ask(model, QUESTION)
     assert excinfo.type is error
+    assert len(vendor.requests) == requests
 
 
 def test_rejects_an_invalid_effort_before_sending(
