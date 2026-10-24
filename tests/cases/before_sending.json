@@ -68,5 +68,55 @@
         "reply": "uni-llm-client/response/invalid_argument"
       }
     ]
+  },
+  {
+    "name": "complete-unknown-role",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/complete_unknown_role",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "complete-unknown-block-type",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/complete_unknown_block_type",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "complete-block-missing-a-field",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/complete_block_without_text",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "complete-block-with-an-unknown-field",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/complete_block_with_unknown_field",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "complete-content-that-is-not-a-list",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/complete_content_as_text",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
   }
 ]

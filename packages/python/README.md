@@ -78,6 +78,10 @@ with Client() as client:
 asynchronous `AsyncClient` has the same methods. Its streams close with
 `contextlib.aclosing`.
 
+To keep a conversation between calls, `message.to_dict()` gives a form that
+`json.dumps` can store and `Message.from_dict` reads back, and `Response` has
+both too.
+
 A provider of your own, such as a gateway speaking the Anthropic API, under a
 name of your own, and a timeout for one call:
 

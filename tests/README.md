@@ -127,8 +127,12 @@ Error types are the same in every port:
 
 The arguments and replies of `complete` and `stream` use the names of
 [messages.md](../docs/specs/messages.md) and
-[streaming.md](../docs/specs/streaming.md). Replies hold every field, defaults
-included.
+[streaming.md](../docs/specs/streaming.md). Messages and responses take the
+library's own JSON form, specified in
+[Serialisation](../docs/specs/messages.md#serialisation) (MSG-9 to MSG-12), and
+each test server converts them with its library. Replies hold every field,
+defaults included. Arguments may leave out a field that has a default, and a
+message of another form is an `invalid_argument` error.
 
 | Value | JSON |
 |---|---|

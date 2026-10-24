@@ -5,8 +5,8 @@
 
 Run ``python tests/server.py --vendor-url URL [--client sync|async]``. Every
 vendor request goes to `URL`, keeping its path and ``Host`` header. The protocol,
-and the JSON form of messages and events, is in ``tests/README.md`` at the
-repository root.
+and the JSON form of events, is in ``tests/README.md`` at the repository root.
+Messages and responses take the library's own JSON form (``to_dict``).
 """
 
 import argparse
@@ -24,43 +24,25 @@ from uni_llm_client import (
     AuthenticationError,
     Client,
     Completed,
-    ContentBlock,
     IncompleteResponseError,
     Message,
     ProviderConfig,
     ProviderError,
     RateLimitError,
-    ReasoningBlock,
     ReasoningDelta,
     RefusalError,
     Response,
-    ServerToolResultBlock,
-    ServerToolUseBlock,
     StreamEvent,
-    TextBlock,
     TextDelta,
     Tool,
-    ToolResultBlock,
-    ToolUseBlock,
     ToolUseDelta,
     ToolUseEnd,
     ToolUseStart,
     TransportError,
-    VendorContent,
 )
 from uni_llm_client._client import DEFAULT_TIMEOUT
 
 CALLS = ("ask", "complete", "stream")
-
-BLOCK_TYPES: dict[str, type[ContentBlock]] = {
-    "text": TextBlock,
-    "reasoning": ReasoningBlock,
-    "tool_use": ToolUseBlock,
-    "tool_result": ToolResultBlock,
-    "server_tool_use": ServerToolUseBlock,
-    "server_tool_result": ServerToolResultBlock,
-}
-BLOCK_NAMES = {cls: name for name, cls in BLOCK_TYPES.items()}
 
 EVENT_NAMES: dict[type[StreamEvent], str] = {
     TextDelta: "text_delta",
@@ -109,38 +91,13 @@ class AsyncRedirectTransport(httpx2.AsyncHTTPTransport):
         return await super().handle_async_request(request)
 
 
-def message_of(data: dict[str, Any]) -> Message:
-    content = tuple(
-        BLOCK_TYPES[block["type"]](**{k: v for k, v in block.items() if k != "type"})
-        for block in data["content"]
-    )
-    vendor = data.get("vendor")
-    if vendor is not None:
-        return Message(
-            data["role"], content, VendorContent(vendor["kind"], vendor["content"])
-        )
-    return Message(data["role"], content)
-
-
-def block_json(block: ContentBlock) -> dict[str, Any]:
-    return {"type": BLOCK_NAMES[type(block)], **dataclasses.asdict(block)}
-
-
-def message_json(message: Message) -> dict[str, Any]:
-    vendor = message.vendor
-    return {
-        "role": message.role,
-        "content": [block_json(block) for block in message.content],
-        "vendor": vendor and {"kind": vendor.kind, "content": vendor.content},
-    }
-
-
 def response_json(response: Response) -> dict[str, Any]:
-    return {
-        "message": message_json(response.message),
-        "stop_reason": response.stop_reason.value,
-        "usage": dataclasses.asdict(response.usage),
-    }
+    """The response's JSON form, which must read back as the same response."""
+    reply = response.to_dict()
+    # Every response the tests see checks the round trip (MSG-11).
+    if Response.from_dict(reply) != response:
+        raise AssertionError(f"The response does not read back as itself: {reply}")
+    return reply
 
 
 def event_json(event: StreamEvent) -> dict[str, Any]:
@@ -148,7 +105,9 @@ def event_json(event: StreamEvent) -> dict[str, Any]:
     if isinstance(event, Completed):
         return {"type": name, "response": response_json(event.response)}
     if isinstance(event, ToolUseEnd):
-        return {"type": name, "block": block_json(event.block)}
+        # The block has the form it has in a message.
+        (block,) = Message("assistant", (event.block,)).to_dict()["content"]
+        return {"type": name, "block": block}
     return {"type": name, **dataclasses.asdict(event)}
 
 
@@ -181,7 +140,7 @@ def model_kwargs(args: dict[str, Any]) -> dict[str, Any]:
     """The arguments of `complete` and `stream`."""
     return {
         "model": args["model"],
-        "messages": [message_of(message) for message in args["messages"]],
+        "messages": [Message.from_dict(message) for message in args["messages"]],
         "system": args.get("system"),
         "tools": [Tool(**tool) for tool in args.get("tools", [])],
         "web_search": args.get("web_search", False),

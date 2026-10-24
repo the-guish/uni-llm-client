@@ -1,0 +1,21 @@
+{
+  "model": "anthropic/some-model",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image",
+          "source": {
+            "type": "url",
+            "url": "https://example.com/paris.png"
+          }
+        },
+        {
+          "type": "text",
+          "text": "What is the capital of France?"
+        }
+      ]
+    }
+  ]
+}

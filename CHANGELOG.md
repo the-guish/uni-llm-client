@@ -18,6 +18,7 @@ and this project adheres to
 - Providers of your own: a gateway or another deployment of a known API,
   under a name of your own, with its own key and base URL; and a `timeout`
   per call. Specified in `docs/specs/providers.md`.
+- A JSON form of messages and responses to store conversations in: `to_dict` and `from_dict`
 
 ### Changed
 
