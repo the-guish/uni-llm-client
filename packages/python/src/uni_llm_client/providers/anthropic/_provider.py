@@ -106,7 +106,9 @@ class AnthropicProvider(Provider):
                 body["max_tokens"] = budget + max_tokens
                 body["thinking"] = {"type": "enabled", "budget_tokens": budget}
             else:
-                body["thinking"] = {"type": "adaptive"}
+                # Current models leave the reasoning's text out unless asked, and
+                # bill it the same either way (EFFORT-7).
+                body["thinking"] = {"type": "adaptive", "display": "summarized"}
                 body["output_config"] = {"effort": effort.value}
         tools: list[dict[str, Any]] = []
         if call.web_search:

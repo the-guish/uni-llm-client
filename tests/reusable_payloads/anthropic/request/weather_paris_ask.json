@@ -11,7 +11,8 @@
     "max_tokens": 2048,
     "system": "Answer briefly.",
     "thinking": {
-      "type": "adaptive"
+      "type": "adaptive",
+      "display": "summarized"
     },
     "output_config": {
       "effort": "high"

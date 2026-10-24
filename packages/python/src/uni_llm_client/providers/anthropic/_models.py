@@ -13,7 +13,8 @@ from uni_llm_client._effort import Effort
 @dataclass(frozen=True)
 class ModelInfo:
     thinking: Literal["adaptive", "budget"]
-    """``adaptive`` uses ``output_config.effort``; ``budget`` uses ``budget_tokens``."""
+    """``adaptive`` uses ``output_config.effort`` and asks for the reasoning's summary
+    (``display``); ``budget`` uses ``budget_tokens`` and shows its reasoning anyway."""
 
     max_output_tokens: int
     web_search_tool: str
