@@ -78,6 +78,19 @@ with Client() as client:
 asynchronous `AsyncClient` has the same methods. Its streams close with
 `contextlib.aclosing`.
 
+A provider of your own, such as a gateway speaking the Anthropic API, under a
+name of your own, and a timeout for one call:
+
+```python
+from uni_llm_client import Client, ProviderConfig
+
+gateway = ProviderConfig(
+    "anthropic", api_key="...", base_url="https://llm.corp/anthropic"
+)
+with Client(providers={"gateway": gateway}) as client:
+    print(client.ask("gateway/claude-opus-5", "Capital of France?", timeout=30))
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/open-shipyard/uni-llm-client/blob/main/CONTRIBUTING.md).

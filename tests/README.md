@@ -62,7 +62,7 @@ file each. A case names a payload by its path, without `.json`. The parties are
 
 | Payload | Content |
 |---|---|
-| `uni-llm-client/request` | The arguments of the call. |
+| `uni-llm-client/request` | The arguments of `ask`: `model`, `question`, and optionally `web_search`, `effort`, `timeout`, `api_keys` and `providers`. |
 | `uni-llm-client/response` | The reply of the test server, without error messages. |
 | `<vendor>/request` | A vendor request: `method`, `url`, `headers` and `json`. |
 | `<vendor>/response` | The `status`, optional `headers`, and the `body` or the `events` the mock vendor serves; or `disconnect`. |
@@ -99,7 +99,7 @@ the repository root, and appends `--vendor-url URL`.
    host, such as `api.anthropic.com`.
 3. `POST /ask`, `POST /complete` and `POST /stream` take the arguments of the
    call as a JSON object. Each calls it with a new client created with the
-   given `api_keys`, and `max_retries` when given.
+   given `api_keys` and `providers`, and `max_retries` when given.
 4. The server replies with status 200. A library error replies
    `{"error": {"type": "...", "message": "..."}}`.
 5. `ask` replies `{"answer": "..."}`. `complete` replies
@@ -132,8 +132,9 @@ included.
 
 | Value | JSON |
 |---|---|
-| Arguments | `model`, `messages`, and optionally `system`, `tools`, `web_search`, `effort`, `max_tokens`, `api_keys` and `max_retries`. |
-| Message | `role`, `content`, a list of blocks, and `vendor`: `{"provider": "...", "content": ...}` or `null`. |
+| Arguments | `model`, `messages`, and optionally `system`, `tools`, `web_search`, `effort`, `max_tokens`, `timeout`, `api_keys`, `providers` and `max_retries`. |
+| Providers | By name: `kind`, and optionally `api_key` and `base_url` ([providers.md](../docs/specs/providers.md)). |
+| Message | `role`, `content`, a list of blocks, and `vendor`: `{"kind": "...", "content": ...}` or `null`. |
 | Block | `type` and the block's fields. The types are `text`, `reasoning`, `tool_use`, `tool_result`, `server_tool_use` and `server_tool_result`. |
 | Tool | `name`, `description` and `input_schema`. |
 | `RESPONSE` | `message`, `stop_reason`, and `usage` with its four counts. |

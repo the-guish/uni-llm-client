@@ -9,7 +9,7 @@
         }
       ],
       "vendor": {
-        "provider": "openrouter",
+        "kind": "openrouter",
         "content": {
           "content": "Lyon is 15°C and cloudy."
         }

@@ -1,0 +1,55 @@
+{
+  "model": "gateway/claude-opus-5",
+  "system": "Answer briefly.",
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Current weather in a city.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ]
+      }
+    }
+  ],
+  "effort": "high",
+  "max_tokens": 2048,
+  "web_search": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What is the weather in Paris?"
+        }
+      ]
+    },
+    {
+      "$reply_message": 0
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_t1",
+          "content": "18°C and sunny"
+        }
+      ]
+    }
+  ],
+  "providers": {
+    "gateway": {
+      "kind": "anthropic",
+      "api_key": "gateway-key",
+      "base_url": "https://llm.corp/anthropic/"
+    }
+  }
+}

@@ -27,6 +27,7 @@ from uni_llm_client import (
     ContentBlock,
     IncompleteResponseError,
     Message,
+    ProviderConfig,
     ProviderError,
     RateLimitError,
     ReasoningBlock,
@@ -116,7 +117,7 @@ def message_of(data: dict[str, Any]) -> Message:
     vendor = data.get("vendor")
     if vendor is not None:
         return Message(
-            data["role"], content, VendorContent(vendor["provider"], vendor["content"])
+            data["role"], content, VendorContent(vendor["kind"], vendor["content"])
         )
     return Message(data["role"], content)
 
@@ -130,7 +131,7 @@ def message_json(message: Message) -> dict[str, Any]:
     return {
         "role": message.role,
         "content": [block_json(block) for block in message.content],
-        "vendor": vendor and {"provider": vendor.provider, "content": vendor.content},
+        "vendor": vendor and {"kind": vendor.kind, "content": vendor.content},
     }
 
 
@@ -151,21 +152,29 @@ def event_json(event: StreamEvent) -> dict[str, Any]:
     return {"type": name, **dataclasses.asdict(event)}
 
 
-def client_kwargs(args: dict[str, Any]) -> dict[str, Any]:
-    """The arguments of the client: `api_keys`, and `max_retries` when given."""
-    kwargs: dict[str, Any] = {"api_keys": args.get("api_keys")}
-    if "max_retries" in args:
-        kwargs["max_retries"] = args["max_retries"]
-    return kwargs
-
-
 def ask_kwargs(args: dict[str, Any]) -> dict[str, Any]:
     return {
         "model": args["model"],
         "question": args["question"],
         "web_search": args.get("web_search", False),
         "effort": args.get("effort"),
+        "timeout": args.get("timeout"),
     }
+
+
+def client_kwargs(args: dict[str, Any]) -> dict[str, Any]:
+    """The arguments of the client: `api_keys`, `providers`, and `max_retries`
+    when given."""
+    providers = args.get("providers") or {}
+    kwargs: dict[str, Any] = {
+        "api_keys": args.get("api_keys"),
+        "providers": {
+            name: ProviderConfig(**config) for name, config in providers.items()
+        },
+    }
+    if "max_retries" in args:
+        kwargs["max_retries"] = args["max_retries"]
+    return kwargs
 
 
 def model_kwargs(args: dict[str, Any]) -> dict[str, Any]:
@@ -178,6 +187,7 @@ def model_kwargs(args: dict[str, Any]) -> dict[str, Any]:
         "web_search": args.get("web_search", False),
         "effort": args.get("effort"),
         "max_tokens": args.get("max_tokens"),
+        "timeout": args.get("timeout"),
     }
 
 
@@ -199,6 +209,7 @@ def call_sync(vendor_url: httpx2.URL, call: str, args: dict[str, Any]) -> Any:
     try:
         client = Client(http_client=http_client, **client_kwargs(args))
     except Exception as error:
+        # A refused configuration (PROV-3, RETRY-1) is a library error like any other.
         http_client.close()
         return error_reply(error)
     with client:

@@ -14,7 +14,7 @@
         }
       ],
       "vendor": {
-        "provider": "openrouter",
+        "kind": "openrouter",
         "content": {
           "content": "Paris is the capital of France.",
           "reasoning": "The user asks for the capital of France."

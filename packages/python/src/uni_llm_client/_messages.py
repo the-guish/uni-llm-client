@@ -85,11 +85,14 @@ ContentBlock = (
 class VendorContent:
     """An assistant message as its provider returned it.
 
-    Replayed to that provider as it is, so that nothing is lost: signed reasoning,
-    citations, the vendor's own tool blocks. Another provider never sees it.
+    Replayed as it is to any provider of the same kind, so that nothing is lost:
+    signed reasoning, citations, the vendor's own tool blocks. A provider of
+    another kind never sees it.
     """
 
-    provider: str
+    kind: str
+    """The kind of the provider that returned it (docs/specs/providers.md)."""
+
     content: Any
 
 

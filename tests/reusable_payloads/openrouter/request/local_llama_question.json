@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "url": "https://ollama.corp/v1/chat/completions",
+  "headers": {
+    "authorization": "Bearer local-key",
+    "content-type": "application/json"
+  },
+  "json": {
+    "model": "llama4",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?"
+      }
+    ]
+  }
+}

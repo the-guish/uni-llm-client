@@ -7,6 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 from uni_llm_client._async_client import AsyncClient
 from uni_llm_client._client import Client
+from uni_llm_client._config import ProviderConfig
 from uni_llm_client._effort import Effort
 from uni_llm_client._errors import (
     AuthenticationError,
@@ -57,6 +58,7 @@ __all__ = [
     "Effort",
     "IncompleteResponseError",
     "Message",
+    "ProviderConfig",
     "ProviderError",
     "RateLimitError",
     "ReasoningBlock",

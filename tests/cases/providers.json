@@ -1,0 +1,112 @@
+[
+  {
+    "name": "configured-provider-at-a-base-url",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/gateway_opus_5_question",
+        "vendor": [
+          {
+            "request": "anthropic/request/gateway_opus_5_question",
+            "response": "anthropic/response/answer"
+          }
+        ],
+        "reply": "uni-llm-client/response/answer"
+      }
+    ]
+  },
+  {
+    "name": "configured-openrouter-kind-at-a-base-url",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/local_llama_question",
+        "vendor": [
+          {
+            "request": "openrouter/request/local_llama_question",
+            "response": "openrouter/response/answer"
+          }
+        ],
+        "reply": "uni-llm-client/response/answer"
+      }
+    ]
+  },
+  {
+    "name": "configured-provider-replaces-a-built-in",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/replaced_anthropic_question",
+        "vendor": [
+          {
+            "request": "anthropic/request/replaced_opus_5_question",
+            "response": "anthropic/response/answer"
+          }
+        ],
+        "reply": "uni-llm-client/response/answer"
+      }
+    ]
+  },
+  {
+    "name": "replay-to-a-provider-of-the-same-kind",
+    "steps": [
+      {
+        "complete": "uni-llm-client/request/gateway_weather_paris_ask",
+        "vendor": [
+          {
+            "request": "anthropic/request/gateway_weather_paris_ask",
+            "response": "anthropic/response/weather_paris_tool_use"
+          }
+        ],
+        "reply": "uni-llm-client/response/weather_paris_tool_use"
+      },
+      {
+        "complete": "uni-llm-client/request/gateway_weather_paris_tool_result",
+        "vendor": [
+          {
+            "request": "anthropic/request/gateway_weather_paris_tool_result",
+            "response": "anthropic/response/weather_paris_answer"
+          }
+        ],
+        "reply": "uni-llm-client/response/weather_paris_answer"
+      }
+    ]
+  },
+  {
+    "name": "unknown-kind",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/unknown_kind",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "configured-provider-without-key",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/gateway_without_key",
+        "vendor": [],
+        "reply": "uni-llm-client/response/authentication"
+      }
+    ]
+  },
+  {
+    "name": "api-key-for-a-configured-provider",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/api_key_for_a_configured_provider",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  },
+  {
+    "name": "zero-timeout",
+    "steps": [
+      {
+        "ask": "uni-llm-client/request/zero_timeout",
+        "vendor": [],
+        "reply": "uni-llm-client/response/invalid_argument"
+      }
+    ]
+  }
+]

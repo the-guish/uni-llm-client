@@ -15,6 +15,7 @@ from typing import Self, TypeVar
 
 import httpx2
 
+from uni_llm_client._config import ProviderConfig
 from uni_llm_client._effort import Effort
 from uni_llm_client._errors import IncompleteResponseError, UniLLMError
 from uni_llm_client._events import Completed, StreamEvent
@@ -48,8 +49,12 @@ class Client:
     """Synchronous client. Create it once and reuse it: it holds a connection pool.
 
     Args:
-        api_keys: API key per provider, e.g. ``{"anthropic": "..."}``. Providers
-            without one read their environment variable, e.g. ``ANTHROPIC_API_KEY``.
+        api_keys: API key per built-in provider, e.g. ``{"anthropic": "..."}``.
+            A built-in without one reads its environment variable, e.g.
+            ``ANTHROPIC_API_KEY``.
+        providers: Providers of your own by name, e.g. a gateway speaking the
+            Anthropic API: ``{"gateway": ProviderConfig("anthropic", key, url)}``.
+            One named like a built-in replaces it. See docs/specs/providers.md.
         http_client: HTTP client used to send requests; closed with this client.
         max_retries: Retries of a request that failed in a way that may pass, such
             as a rate limit, a vendor error or a lost connection; 0 disables them.
@@ -59,11 +64,12 @@ class Client:
         self,
         *,
         api_keys: Mapping[str, str] | None = None,
+        providers: Mapping[str, ProviderConfig] | None = None,
         http_client: httpx2.Client | None = None,
         max_retries: int = DEFAULT_MAX_RETRIES,
     ) -> None:
         self._retry = RetryPolicy(max_retries)
-        self._registry = ProviderRegistry(api_keys)
+        self._registry = ProviderRegistry(api_keys, providers)
         self._http = http_client or httpx2.Client(timeout=DEFAULT_TIMEOUT)
 
     def ask(
@@ -73,10 +79,15 @@ class Client:
         *,
         web_search: bool = False,
         effort: Effort | str | None = None,
+        timeout: float | None = None,
     ) -> str:
         """Ask `model`, a ``"provider/model"`` id, a question and return the answer."""
         provider, call = self._registry.prepare(
-            model, [Message.user(question)], web_search=web_search, effort=effort
+            model,
+            [Message.user(question)],
+            web_search=web_search,
+            effort=effort,
+            timeout=timeout,
         )
         for _ in range(MAX_REQUESTS):
             # Each request retries on its own (RETRY-8).
@@ -98,6 +109,7 @@ class Client:
         web_search: bool = False,
         effort: Effort | str | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
     ) -> Response:
         """Send `messages` to `model` and return its whole response."""
         provider, call = self._registry.prepare(
@@ -108,6 +120,7 @@ class Client:
             web_search=web_search,
             effort=effort,
             max_tokens=max_tokens,
+            timeout=timeout,
         )
         return self._send(provider.build_request(call), provider.parse_response)
 
@@ -121,6 +134,7 @@ class Client:
         web_search: bool = False,
         effort: Effort | str | None = None,
         max_tokens: int | None = None,
+        timeout: float | None = None,
     ) -> Iterator[StreamEvent]:
         """Send `messages` to `model` and yield its response as it arrives.
 
@@ -135,6 +149,7 @@ class Client:
             web_search=web_search,
             effort=effort,
             max_tokens=max_tokens,
+            timeout=timeout,
         )
         request = provider.build_request(call, stream=True)
         response = self._send(request, partial(accepted, provider), stream=True)

@@ -1,0 +1,11 @@
+{
+  "model": "local/llama4",
+  "question": "What is the capital of France?",
+  "providers": {
+    "local": {
+      "kind": "openrouter",
+      "api_key": "local-key",
+      "base_url": "https://ollama.corp/v1"
+    }
+  }
+}

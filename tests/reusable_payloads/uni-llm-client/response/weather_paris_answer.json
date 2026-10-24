@@ -21,7 +21,7 @@
         }
       ],
       "vendor": {
-        "provider": "anthropic",
+        "kind": "anthropic",
         "content": [
           {
             "type": "server_tool_use",

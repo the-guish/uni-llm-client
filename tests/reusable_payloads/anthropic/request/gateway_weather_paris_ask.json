@@ -1,0 +1,43 @@
+{
+  "method": "POST",
+  "url": "https://llm.corp/anthropic/v1/messages",
+  "headers": {
+    "x-api-key": "gateway-key",
+    "anthropic-version": "2023-06-01",
+    "content-type": "application/json"
+  },
+  "json": {
+    "model": "claude-opus-5",
+    "max_tokens": 2048,
+    "system": "Answer briefly.",
+    "thinking": {
+      "type": "adaptive"
+    },
+    "output_config": {
+      "effort": "high"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the weather in Paris?"
+      }
+    ],
+    "tools": [
+      {
+        "name": "get_weather",
+        "description": "Current weather in a city.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    ]
+  }
+}

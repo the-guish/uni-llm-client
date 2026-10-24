@@ -54,7 +54,6 @@ from uni_llm_client.providers.anthropic._models import (
     lookup_model,
 )
 
-API_URL = "https://api.anthropic.com/v1/messages"
 API_VERSION = "2023-06-01"
 
 # Output tokens reserved for the answer when the caller sets no limit. Token-budget
@@ -86,8 +85,10 @@ _JSON_INPUT_BLOCKS = frozenset({"tool_use", "server_tool_use", "mcp_tool_use"})
 
 
 class AnthropicProvider(Provider):
-    name = "anthropic"
+    kind = "anthropic"
     api_key_env = "ANTHROPIC_API_KEY"
+    default_base_url = "https://api.anthropic.com"
+    path = "/v1/messages"
 
     def build_request(self, call: ModelCall, *, stream: bool = False) -> httpx2.Request:
         info = lookup_model(call.model)
@@ -95,7 +96,7 @@ class AnthropicProvider(Provider):
         body: dict[str, Any] = {"model": call.model, "max_tokens": max_tokens}
         if call.system is not None:
             body["system"] = call.system
-        body["messages"] = [_message(message, self.name) for message in call.messages]
+        body["messages"] = [_message(message, self.kind) for message in call.messages]
         effort = call.effort
         if effort is not None:
             if info is not None:
@@ -124,7 +125,7 @@ class AnthropicProvider(Provider):
         if stream:
             body["stream"] = True
         headers = {"x-api-key": self.api_key, "anthropic-version": API_VERSION}
-        return httpx2.Request("POST", API_URL, headers=headers, json=body)
+        return self.post(headers, body, call.timeout)
 
     def parse_response(self, response: httpx2.Response) -> Response:
         if response.is_error:
@@ -150,7 +151,7 @@ class AnthropicProvider(Provider):
         content = message["content"]
         return Response(
             message=Message(
-                "assistant", _blocks_of(content), VendorContent(self.name, content)
+                "assistant", _blocks_of(content), VendorContent(self.kind, content)
             ),
             stop_reason=STOP_REASONS[stop_reason],
             usage=_usage_of(message.get("usage") or {}),
@@ -244,11 +245,11 @@ class AnthropicStreamParser(StreamParser):
                 )
 
 
-def _message(message: Message, provider: str) -> dict[str, Any]:
+def _message(message: Message, kind: str) -> dict[str, Any]:
     if (
         message.role == "assistant"
         and message.vendor is not None
-        and message.vendor.provider == provider
+        and message.vendor.kind == kind
     ):
         return {"role": "assistant", "content": message.vendor.content}
     blocks = [raw for block in message.content if (raw := _raw_block(block))]
