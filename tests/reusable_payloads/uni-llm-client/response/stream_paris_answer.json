@@ -20,7 +20,7 @@
             }
           ],
           "vendor": {
-            "provider": "anthropic",
+            "kind": "anthropic",
             "content": [
               {
                 "type": "text",

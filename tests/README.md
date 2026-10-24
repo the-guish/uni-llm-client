@@ -62,10 +62,10 @@ file each. A case names a payload by its path, without `.json`. The parties are
 
 | Payload | Content |
 |---|---|
-| `uni-llm-client/request` | The arguments of the call. |
+| `uni-llm-client/request` | The arguments of `ask`: `model`, `question`, and optionally `web_search`, `effort`, `timeout`, `api_keys` and `providers`. |
 | `uni-llm-client/response` | The reply of the test server, without error messages. |
 | `<vendor>/request` | A vendor request: `method`, `url`, `headers` and `json`. |
-| `<vendor>/response` | The `status` and the `body` or the `events` the mock vendor serves. |
+| `<vendor>/response` | The `status`, optional `headers`, and the `body` or the `events` the mock vendor serves; or `disconnect`. |
 
 A vendor request matches when its `method`, `url` and `json` are equal. Its
 `headers` must be present with these values, and other headers are allowed.
@@ -77,6 +77,12 @@ arguments set `api_keys`.
 A vendor response with `events` is a stream of server-sent events. Each event
 has a `data`, a JSON value or text, and an optional `event` name. An event with
 a `comment` is a comment line. A stream that stops early is cut short.
+
+The mock vendor sends a response's `headers` besides `Content-Type` and
+`Content-Length`. Errors that are retried carry `retry-after: 0` where a vendor
+would send the header, so that the tests do not wait for them. A response
+`{"disconnect": true}` closes the connection without an answer, as a network
+fault would. A request that finds no response left gets a 500.
 
 A new behaviour usually needs a new case. Reuse a payload when one fits.
 
@@ -93,7 +99,7 @@ the repository root, and appends `--vendor-url URL`.
    host, such as `api.anthropic.com`.
 3. `POST /ask`, `POST /complete` and `POST /stream` take the arguments of the
    call as a JSON object. Each calls it with a new client created with the
-   given `api_keys`.
+   given `api_keys` and `providers`, and `max_retries` when given.
 4. The server replies with status 200. A library error replies
    `{"error": {"type": "...", "message": "..."}}`.
 5. `ask` replies `{"answer": "..."}`. `complete` replies
@@ -114,19 +120,25 @@ Error types are the same in every port:
 | `rate_limit` | The vendor rate-limits the request. |
 | `refusal` | The model declines to answer. |
 | `incomplete_response` | The response contains no complete answer. |
+| `transport` | The connection failed or timed out. |
 | `provider` | Any other vendor error. |
 
 ## JSON form
 
 The arguments and replies of `complete` and `stream` use the names of
 [messages.md](../docs/specs/messages.md) and
-[streaming.md](../docs/specs/streaming.md). Replies hold every field, defaults
-included.
+[streaming.md](../docs/specs/streaming.md). Messages and responses take the
+library's own JSON form, specified in
+[Serialisation](../docs/specs/messages.md#serialisation) (MSG-9 to MSG-12), and
+each test server converts them with its library. Replies hold every field,
+defaults included. Arguments may leave out a field that has a default, and a
+message of another form is an `invalid_argument` error.
 
 | Value | JSON |
 |---|---|
-| Arguments | `model`, `messages`, and optionally `system`, `tools`, `web_search`, `effort`, `max_tokens` and `api_keys`. |
-| Message | `role`, `content`, a list of blocks, and `vendor`: `{"provider": "...", "content": ...}` or `null`. |
+| Arguments | `model`, `messages`, and optionally `system`, `tools`, `web_search`, `effort`, `max_tokens`, `timeout`, `api_keys`, `providers` and `max_retries`. |
+| Providers | By name: `kind`, and optionally `api_key` and `base_url` ([providers.md](../docs/specs/providers.md)). |
+| Message | `role`, `content`, a list of blocks, and `vendor`: `{"kind": "...", "content": ...}` or `null`. |
 | Block | `type` and the block's fields. The types are `text`, `reasoning`, `tool_use`, `tool_result`, `server_tool_use` and `server_tool_result`. |
 | Tool | `name`, `description` and `input_schema`. |
 | `RESPONSE` | `message`, `stop_reason`, and `usage` with its four counts. |

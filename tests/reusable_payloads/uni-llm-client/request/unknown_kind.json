@@ -1,0 +1,10 @@
+{
+  "model": "x/some-model",
+  "question": "What is the capital of France?",
+  "providers": {
+    "x": {
+      "kind": "nope",
+      "api_key": "k"
+    }
+  }
+}

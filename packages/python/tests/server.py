@@ -5,8 +5,8 @@
 
 Run ``python tests/server.py --vendor-url URL [--client sync|async]``. Every
 vendor request goes to `URL`, keeping its path and ``Host`` header. The protocol,
-and the JSON form of messages and events, is in ``tests/README.md`` at the
-repository root.
+and the JSON form of events, is in ``tests/README.md`` at the repository root.
+Messages and responses take the library's own JSON form (``to_dict``).
 """
 
 import argparse
@@ -24,41 +24,25 @@ from uni_llm_client import (
     AuthenticationError,
     Client,
     Completed,
-    ContentBlock,
     IncompleteResponseError,
     Message,
+    ProviderConfig,
     ProviderError,
     RateLimitError,
-    ReasoningBlock,
     ReasoningDelta,
     RefusalError,
     Response,
-    ServerToolResultBlock,
-    ServerToolUseBlock,
     StreamEvent,
-    TextBlock,
     TextDelta,
     Tool,
-    ToolResultBlock,
-    ToolUseBlock,
     ToolUseDelta,
     ToolUseEnd,
     ToolUseStart,
-    VendorContent,
+    TransportError,
 )
 from uni_llm_client._client import DEFAULT_TIMEOUT
 
 CALLS = ("ask", "complete", "stream")
-
-BLOCK_TYPES: dict[str, type[ContentBlock]] = {
-    "text": TextBlock,
-    "reasoning": ReasoningBlock,
-    "tool_use": ToolUseBlock,
-    "tool_result": ToolResultBlock,
-    "server_tool_use": ServerToolUseBlock,
-    "server_tool_result": ServerToolResultBlock,
-}
-BLOCK_NAMES = {cls: name for name, cls in BLOCK_TYPES.items()}
 
 EVENT_NAMES: dict[type[StreamEvent], str] = {
     TextDelta: "text_delta",
@@ -76,6 +60,7 @@ ERROR_TYPES: list[tuple[type[Exception], str]] = [
     (RateLimitError, "rate_limit"),
     (RefusalError, "refusal"),
     (IncompleteResponseError, "incomplete_response"),
+    (TransportError, "transport"),
     (ProviderError, "provider"),
 ]
 
@@ -106,38 +91,13 @@ class AsyncRedirectTransport(httpx2.AsyncHTTPTransport):
         return await super().handle_async_request(request)
 
 
-def message_of(data: dict[str, Any]) -> Message:
-    content = tuple(
-        BLOCK_TYPES[block["type"]](**{k: v for k, v in block.items() if k != "type"})
-        for block in data["content"]
-    )
-    vendor = data.get("vendor")
-    if vendor is not None:
-        return Message(
-            data["role"], content, VendorContent(vendor["provider"], vendor["content"])
-        )
-    return Message(data["role"], content)
-
-
-def block_json(block: ContentBlock) -> dict[str, Any]:
-    return {"type": BLOCK_NAMES[type(block)], **dataclasses.asdict(block)}
-
-
-def message_json(message: Message) -> dict[str, Any]:
-    vendor = message.vendor
-    return {
-        "role": message.role,
-        "content": [block_json(block) for block in message.content],
-        "vendor": vendor and {"provider": vendor.provider, "content": vendor.content},
-    }
-
-
 def response_json(response: Response) -> dict[str, Any]:
-    return {
-        "message": message_json(response.message),
-        "stop_reason": response.stop_reason.value,
-        "usage": dataclasses.asdict(response.usage),
-    }
+    """The response's JSON form, which must read back as the same response."""
+    reply = response.to_dict()
+    # Every response the tests see checks the round trip (MSG-11).
+    if Response.from_dict(reply) != response:
+        raise AssertionError(f"The response does not read back as itself: {reply}")
+    return reply
 
 
 def event_json(event: StreamEvent) -> dict[str, Any]:
@@ -145,7 +105,9 @@ def event_json(event: StreamEvent) -> dict[str, Any]:
     if isinstance(event, Completed):
         return {"type": name, "response": response_json(event.response)}
     if isinstance(event, ToolUseEnd):
-        return {"type": name, "block": block_json(event.block)}
+        # The block has the form it has in a message.
+        (block,) = Message("assistant", (event.block,)).to_dict()["content"]
+        return {"type": name, "block": block}
     return {"type": name, **dataclasses.asdict(event)}
 
 
@@ -155,19 +117,36 @@ def ask_kwargs(args: dict[str, Any]) -> dict[str, Any]:
         "question": args["question"],
         "web_search": args.get("web_search", False),
         "effort": args.get("effort"),
+        "timeout": args.get("timeout"),
     }
+
+
+def client_kwargs(args: dict[str, Any]) -> dict[str, Any]:
+    """The arguments of the client: `api_keys`, `providers`, and `max_retries`
+    when given."""
+    providers = args.get("providers") or {}
+    kwargs: dict[str, Any] = {
+        "api_keys": args.get("api_keys"),
+        "providers": {
+            name: ProviderConfig(**config) for name, config in providers.items()
+        },
+    }
+    if "max_retries" in args:
+        kwargs["max_retries"] = args["max_retries"]
+    return kwargs
 
 
 def model_kwargs(args: dict[str, Any]) -> dict[str, Any]:
     """The arguments of `complete` and `stream`."""
     return {
         "model": args["model"],
-        "messages": [message_of(message) for message in args["messages"]],
+        "messages": [Message.from_dict(message) for message in args["messages"]],
         "system": args.get("system"),
         "tools": [Tool(**tool) for tool in args.get("tools", [])],
         "web_search": args.get("web_search", False),
         "effort": args.get("effort"),
         "max_tokens": args.get("max_tokens"),
+        "timeout": args.get("timeout"),
     }
 
 
@@ -186,7 +165,13 @@ def call_sync(vendor_url: httpx2.URL, call: str, args: dict[str, Any]) -> Any:
         timeout=DEFAULT_TIMEOUT,
         trust_env=False,
     )
-    with Client(api_keys=args.get("api_keys"), http_client=http_client) as client:
+    try:
+        client = Client(http_client=http_client, **client_kwargs(args))
+    except Exception as error:
+        # A refused configuration (PROV-3, RETRY-1) is a library error like any other.
+        http_client.close()
+        return error_reply(error)
+    with client:
         try:
             if call == "ask":
                 return {"answer": client.ask(**ask_kwargs(args))}
@@ -212,9 +197,12 @@ def call_async(vendor_url: httpx2.URL, call: str, args: dict[str, Any]) -> Any:
             timeout=DEFAULT_TIMEOUT,
             trust_env=False,
         )
-        async with AsyncClient(
-            api_keys=args.get("api_keys"), http_client=http_client
-        ) as client:
+        try:
+            client = AsyncClient(http_client=http_client, **client_kwargs(args))
+        except Exception as error:
+            await http_client.aclose()
+            return error_reply(error)
+        async with client:
             try:
                 if call == "ask":
                     return {"answer": await client.ask(**ask_kwargs(args))}

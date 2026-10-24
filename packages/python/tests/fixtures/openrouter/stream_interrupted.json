@@ -1,0 +1,16 @@
+[
+  {
+    "status": 200,
+    "events": [
+      {
+        "data": {
+          "id": "gen-01",
+          "choices": [
+            {"index": 0, "delta": {"role": "assistant", "content": "Par"}}
+          ]
+        }
+      }
+    ],
+    "disconnect": true
+  }
+]

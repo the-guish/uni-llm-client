@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "events": [
+    {
+      "comment": "OPENROUTER PROCESSING"
+    },
+    {
+      "data": {
+        "id": "gen-e2",
+        "error": {
+          "code": 429,
+          "message": "Rate limit exceeded upstream"
+        }
+      }
+    }
+  ]
+}

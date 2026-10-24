@@ -1,0 +1,12 @@
+{
+  "status": 503,
+  "headers": {
+    "retry-after": "0"
+  },
+  "body": {
+    "error": {
+      "message": "No allowed providers are available for the selected model.",
+      "code": 503
+    }
+  }
+}

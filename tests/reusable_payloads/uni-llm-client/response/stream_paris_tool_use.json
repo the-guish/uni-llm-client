@@ -63,7 +63,7 @@
             }
           ],
           "vendor": {
-            "provider": "anthropic",
+            "kind": "anthropic",
             "content": [
               {
                 "type": "thinking",

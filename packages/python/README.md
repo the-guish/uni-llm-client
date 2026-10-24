@@ -19,6 +19,12 @@ with Client() as client:  # reads ANTHROPIC_API_KEY, OPENROUTER_API_KEY
     print(client.ask("anthropic/claude-opus-5", "Capital of France?", effort="low"))
 ```
 
+A call that fails with a rate limit, a vendor error (5xx), a timeout or a lost
+connection is sent again, twice by default, after waiting as long as the vendor
+asks, or from half a second up to 8 seconds. `Client(max_retries=5)` changes
+the number of retries and `max_retries=0` turns them off. A connection failure
+or a timeout raises `TransportError`, a `UniLLMError` like the vendor errors.
+
 A conversation with tools, streamed:
 
 ```python
@@ -71,6 +77,23 @@ with Client() as client:
 `complete` takes the same arguments and returns the `Response` whole. The
 asynchronous `AsyncClient` has the same methods. Its streams close with
 `contextlib.aclosing`.
+
+To keep a conversation between calls, `message.to_dict()` gives a form that
+`json.dumps` can store and `Message.from_dict` reads back, and `Response` has
+both too.
+
+A provider of your own, such as a gateway speaking the Anthropic API, under a
+name of your own, and a timeout for one call:
+
+```python
+from uni_llm_client import Client, ProviderConfig
+
+gateway = ProviderConfig(
+    "anthropic", api_key="...", base_url="https://llm.corp/anthropic"
+)
+with Client(providers={"gateway": gateway}) as client:
+    print(client.ask("gateway/claude-opus-5", "Capital of France?", timeout=30))
+```
 
 ## Contributing
 

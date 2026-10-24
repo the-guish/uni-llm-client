@@ -27,6 +27,10 @@ class Effort(StrEnum):
   parameters.
 - **EFFORT-6**: A request MUST NOT return an empty string because reasoning
   exhausted the output limit; it raises instead.
+- **EFFORT-7**: A request that enables reasoning MUST ask for the reasoning's
+  text wherever the vendor leaves it out by default. Showing it costs nothing:
+  the vendor bills the reasoning the same whether it shows it or not. The
+  request asks the same way every time, so EFFORT-5 holds.
 
 ## Mapping
 
@@ -37,18 +41,27 @@ class Effort(StrEnum):
 | `high` | `"high"` | `"high"` | `"high"` | 16,384 |
 | `max` | `"max"` | `"max"` | `"high"` | model maximum |
 
-- Anthropic: `thinking: {type: "adaptive"}` + `output_config.effort`.
+- Anthropic: `thinking: {type: "adaptive", display: "summarized"}` +
+  `output_config.effort`. Without `display`, the newer models return thinking
+  blocks with empty text; the older ones accept it and summarize by default
+  (EFFORT-7).
 - OpenAI: `reasoning.effort` (Responses API).
 - Gemini 3.x: `thinking_config.thinking_level`.
 - Token-budget models (e.g. Gemini 2.5, Claude Haiku 4.5): `thinking_budget` /
-  `budget_tokens`.
+  `budget_tokens`. Anthropic's show their reasoning unasked, so no `display` is
+  sent.
 
 ## Non-goals
 
 - Turning reasoning off.
+- Hiding the reasoning's text, which some vendors offer so that a streamed
+  answer starts sooner.
 - Returning reasoning content from `ask`. `complete` and `stream` return
-  it ([messages.md](messages.md), [streaming.md](streaming.md)).
+  it (EFFORT-7, [messages.md](messages.md), [streaming.md](streaming.md)).
 
 ## Open questions
 
 - Should resolving to a different level log, or raise in a strict mode?
+- Should a request without `effort` ask for the reasoning's text on models that
+  reason by default? EFFORT-2 sends nothing, so their thinking blocks come back
+  empty.

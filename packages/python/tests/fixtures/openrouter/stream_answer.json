@@ -1,0 +1,29 @@
+[
+  {
+    "status": 200,
+    "events": [
+      {
+        "data": {
+          "id": "gen-01",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "role": "assistant",
+                "content": "Paris is the capital of France."
+              }
+            }
+          ]
+        }
+      },
+      {
+        "data": {
+          "id": "gen-01",
+          "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+          "usage": {"prompt_tokens": 14, "completion_tokens": 12, "total_tokens": 26}
+        }
+      },
+      {"data": "[DONE]"}
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "model": "gateway/claude-opus-5",
+  "question": "What is the capital of France?",
+  "providers": {
+    "gateway": {
+      "kind": "anthropic",
+      "api_key": "gateway-key",
+      "base_url": "https://llm.corp/anthropic/"
+    }
+  }
+}

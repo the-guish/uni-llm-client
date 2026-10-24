@@ -45,8 +45,6 @@ from uni_llm_client.providers._base import (
     http_error,
 )
 
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
-
 _REFUSAL_ERROR_TYPES = frozenset({"refusal", "content_policy_violation"})
 
 FINISH_REASONS = {
@@ -64,13 +62,15 @@ _JOINED_DETAIL_FIELDS = ("text", "summary", "data")
 
 
 class OpenRouterProvider(Provider):
-    name = "openrouter"
+    kind = "openrouter"
     api_key_env = "OPENROUTER_API_KEY"
+    default_base_url = "https://openrouter.ai/api/v1"
+    path = "/chat/completions"
 
     def build_request(self, call: ModelCall, *, stream: bool = False) -> httpx2.Request:
         body: dict[str, Any] = {
             "model": call.model,
-            "messages": _messages(call, self.name),
+            "messages": _messages(call, self.kind),
         }
         if call.max_tokens is not None:
             body["max_tokens"] = call.max_tokens
@@ -96,7 +96,7 @@ class OpenRouterProvider(Provider):
         if stream:
             body["stream"] = True
         headers = {"Authorization": f"Bearer {self.api_key}"}
-        return httpx2.Request("POST", API_URL, headers=headers, json=body)
+        return self.post(headers, body, call.timeout)
 
     def parse_response(self, response: httpx2.Response) -> Response:
         if response.is_error:
@@ -133,7 +133,7 @@ class OpenRouterProvider(Provider):
         }
         return Response(
             message=Message(
-                "assistant", _blocks_of(message), VendorContent(self.name, replayed)
+                "assistant", _blocks_of(message), VendorContent(self.kind, replayed)
             ),
             stop_reason=stop_reason,
             usage=_usage_of(body.get("usage") or {}),
@@ -258,20 +258,20 @@ class OpenRouterStreamParser(StreamParser):
             self._detail_at[index] = len(self._details) - 1
 
 
-def _messages(call: ModelCall, provider: str) -> list[dict[str, Any]]:
+def _messages(call: ModelCall, kind: str) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
     if call.system is not None:
         messages.append({"role": "system", "content": call.system})
     for message in call.messages:
         if message.role == "assistant":
-            messages.append(_assistant(message, provider))
+            messages.append(_assistant(message, kind))
         else:
             messages.extend(_user(message))
     return messages
 
 
-def _assistant(message: Message, provider: str) -> dict[str, Any]:
-    if message.vendor is not None and message.vendor.provider == provider:
+def _assistant(message: Message, kind: str) -> dict[str, Any]:
+    if message.vendor is not None and message.vendor.kind == kind:
         return {"role": "assistant", **message.vendor.content}
     raw: dict[str, Any] = {"role": "assistant", "content": message.text or None}
     calls = [

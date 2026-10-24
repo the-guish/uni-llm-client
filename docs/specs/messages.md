@@ -4,16 +4,16 @@ Status: Draft
 
 ## Scope
 
-The conversation model every port shares, and `complete`, the method that sends
-a conversation to a model and returns its whole response. `stream` sends the
-same conversation and is specified in [streaming.md](streaming.md). `ask` is
-`complete` with one user message.
+The conversation model every port shares, with its JSON form, and `complete`,
+the method that sends a conversation to a model and returns its whole response.
+`stream` sends the same conversation and is specified in
+[streaming.md](streaming.md). `ask` is `complete` with one user message.
 
 ## Model
 
 A **message** has a `role`, `user` or `assistant`, and `content`, a sequence of
 blocks. An assistant message a provider returned also carries `vendor`: the
-provider's name and the content as the provider returned it.
+provider's kind and the content as the provider returned it.
 
 | Block | Fields | Meaning |
 |---|---|---|
@@ -43,20 +43,21 @@ those spent reasoning, when the vendor counts them; else 0).
 
 ## `complete`
 
-Inputs: a `provider/model` id, `messages`, and optionally `system`, `tools`,
-`web_search`, `effort` ([effort.md](effort.md)) and `max_tokens`. Output: a
-response.
+Inputs: a `provider/model` id ([providers.md](providers.md)), `messages`, and
+optionally `system`, `tools`, `web_search`, `effort` ([effort.md](effort.md)),
+`max_tokens` and `timeout`. Output: a response.
 
 ## Invariants
 
 - **MSG-1**: Before anything is sent, `messages` MUST be non-empty, `max_tokens`
   MUST be positive when given, and `effort` MUST be valid (EFFORT-1); otherwise
   `ValueError`.
-- **MSG-2**: An assistant message is replayed to the provider that returned it
-  as that provider returned it, `vendor.content` whole, so that signed
-  reasoning, citations and the vendor's tool blocks are never lost. Any other
-  provider receives the message's blocks; reasoning blocks and the vendor's tool
-  blocks are left out, since they cannot be made valid for it.
+- **MSG-2**: An assistant message is replayed to a provider of the kind that
+  returned it as that provider returned it, `vendor.content` whole, so that
+  signed reasoning, citations and the vendor's tool blocks are never lost
+  ([providers.md](providers.md)). A provider of another kind receives the
+  message's blocks; reasoning blocks and the vendor's tool blocks are left out,
+  since they cannot be made valid for it.
 - **MSG-3**: In a user message, tool results come before text. On an API where
   tool results are messages of their own, each becomes one, before the text.
 - **MSG-4**: A message of one text block is sent as plain text where the API
@@ -91,6 +92,45 @@ response.
 | `cached_input_tokens` | `cache_read_input_tokens` | `prompt_tokens_details.cached_tokens` |
 | `reasoning_tokens` | 0 | `completion_tokens_details.reasoning_tokens` |
 
+## Serialisation
+
+Messages and responses have a JSON form of their own, so that callers can
+store a conversation between calls. `to_dict` gives it and the class method
+`from_dict` reads it back, on `Message` and on `Response`; each port spells
+them in its language's way.
+
+| Value | JSON |
+|---|---|
+| Message | `role`, `content`, a list of blocks, and `vendor`: `{"kind": ..., "content": ...}` or `null`. |
+| Block | `type`, then the block's fields. |
+| Response | `message`, `stop_reason`, and `usage` with its four counts. |
+
+| `type` | Block |
+|---|---|
+| `text` | `TextBlock` |
+| `reasoning` | `ReasoningBlock` |
+| `tool_use` | `ToolUseBlock` |
+| `tool_result` | `ToolResultBlock` |
+| `server_tool_use` | `ServerToolUseBlock` |
+| `server_tool_result` | `ServerToolResultBlock` |
+
+- **MSG-9**: `to_dict` holds every field, defaults included, and JSON values
+  alone: objects with string keys, arrays, strings, numbers, booleans and
+  `null`. A tool's `input` and the vendor's content become plain objects and
+  arrays, copied, so that changing the result never changes the message. A
+  value JSON cannot hold raises `ValueError`.
+- **MSG-10**: Each block carries its `type`, from the table above, so that
+  blocks with the same fields, such as `ToolUseBlock` and `ServerToolUseBlock`,
+  stay apart.
+- **MSG-11**: `from_dict(x.to_dict())` equals `x` for every message and response
+  made of JSON values. `vendor` comes back whole, so that a stored assistant
+  message replays as it came (MSG-2).
+- **MSG-12**: `from_dict` raises `ValueError` for anything outside this form: an
+  unknown block type, role or stop reason; a missing field, a field of another
+  JSON type, or a field the value does not have. A field with a default may be
+  left out and takes it, so that a message written by hand needs no `vendor` or
+  `is_error`.
+
 ## Non-goals
 
 - Choosing the tool (`tool_choice`) or forbidding parallel calls.
@@ -99,6 +139,5 @@ response.
 
 ## Open questions
 
-- A serialisation of messages for callers that store them.
 - Whether `ServerToolUseBlock` should stream, so that a UI can show a vendor's
   tool at work.

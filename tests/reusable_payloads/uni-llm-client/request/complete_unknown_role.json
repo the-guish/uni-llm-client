@@ -1,0 +1,23 @@
+{
+  "model": "anthropic/some-model",
+  "messages": [
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "Answer briefly."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What is the capital of France?"
+        }
+      ]
+    }
+  ]
+}
