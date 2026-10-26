@@ -7,12 +7,16 @@ __pycache__/
 .coverage
 .coverage.*
 coverage.xml
+coverage.lcov
+*.profraw
 htmlcov/
 
 # Build artifacts
 build/
 dist/
 *.egg-info/
+.build/
+.swiftpm/
 
 # Environments and secrets (API keys)
 .venv/

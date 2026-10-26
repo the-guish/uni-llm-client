@@ -8,5 +8,15 @@
     "package": "python",
     "cwd": "packages/python",
     "command": ["uv", "run", "--locked", "--no-build", "coverage", "run", "tests/server.py", "--client", "async"]
+  },
+  "swift-sync": {
+    "package": "swift",
+    "cwd": "packages/swift",
+    "command": [".build/debug/TestServer", "--client", "sync"]
+  },
+  "swift-async": {
+    "package": "swift",
+    "cwd": "packages/swift",
+    "command": [".build/debug/TestServer", "--client", "async"]
   }
 }

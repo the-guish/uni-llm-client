@@ -21,6 +21,9 @@ and this project adheres to
   under a name of your own, with its own key and base URL; and a `timeout`
   per call.
 - A JSON form of messages and responses to store conversations in: `to_dict` and `from_dict`
+- The Swift port, `UniLLMClient`: `AsyncClient` and the blocking `Client`, with
+  Anthropic and OpenRouter, streaming, retries, providers of your own and the
+  JSON form of messages (`json`, `init(json:)` and `Codable`)
 
 ### Changed
 
